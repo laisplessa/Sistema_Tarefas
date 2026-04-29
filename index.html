@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listify</title>
+  <link rel="stylesheet" href="index.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- BARRA LATERAL -->
+    <aside class="barra-lateral">
+      <div class="cabecalho-logo">
+        <span class="logo-inicial">L</span>
+        <h1 class="logo-nome">listify</h1>
+      </div>
+
+      <nav class="menu-lateral">
+        <button class="item-menu ativo" data-filtro="todas">
+          <span class="icone-menu">◈</span>
+          <span>Todas</span>
+          <span class="contador-menu" id="contador-todas">0</span>
+        </button>
+        <button class="item-menu" data-filtro="pendente">
+          <span class="icone-menu">○</span>
+          <span>Pendentes</span>
+          <span class="contador-menu" id="contador-pendentes">0</span>
+        </button>
+        <button class="item-menu" data-filtro="andamento">
+          <span class="icone-menu">◑</span>
+          <span>Em andamento</span>
+          <span class="contador-menu" id="contador-andamento">0</span>
+        </button>
+        <button class="item-menu" data-filtro="concluida">
+          <span class="icone-menu">●</span>
+          <span>Concluídas</span>
+          <span class="contador-menu" id="contador-concluidas">0</span>
+        </button>
+      </nav>
+
+      <div class="rodape-lateral">
+        <p class="frase-rodape">"Feito é melhor<br/>que perfeito."</p>
+      </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="conteudo-principal">
+
+      <header class="cabecalho-pagina">
+        <div class="texto-cabecalho">
+          <h2 class="titulo-pagina" id="titulo-pagina">Todas as tarefas</h2>
+          <p class="subtitulo-pagina" id="subtitulo-pagina">Gerencie seu dia com clareza</p>
+        </div>
+        <button class="botao-nova-tarefa" id="botao-abrir-modal">
+          <span>+</span> Nova tarefa
+        </button>
+      </header>
+
+      <!-- LISTA DE TAREFAS -->
+      <section class="lista-tarefas" id="lista-tarefas">
+        <div class="estado-vazio" id="estado-vazio">
+          <span class="icone-vazio">◈</span>
+          <p>Nenhuma tarefa por aqui.</p>
+          <small>Crie uma nova tarefa para começar.</small>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL: NOVA TAREFA -->
+  <div class="fundo-modal" id="modal-nova-tarefa">
+    <div class="modal">
+      <div class="cabecalho-modal">
+        <h3>Nova tarefa</h3>
+        <button class="botao-fechar-modal" id="fechar-modal-nova">✕</button>
+      </div>
+      <div class="corpo-modal">
+        <div class="campo">
+          <label for="input-titulo">Título <span class="obrigatorio">*</span></label>
+          <input type="text" id="input-titulo" placeholder="Ex: Estudar para a prova..." maxlength="80" />
+          <span class="erro-campo" id="erro-titulo">O título é obrigatório.</span>
+        </div>
+        <div class="campo">
+          <label for="input-descricao">Descrição</label>
+          <textarea id="input-descricao" placeholder="Detalhes opcionais sobre a tarefa..." rows="3"></textarea>
+        </div>
+      </div>
+      <div class="rodape-modal">
+        <button class="botao-cancelar" id="cancelar-nova">Cancelar</button>
+        <button class="botao-salvar" id="salvar-nova">Criar tarefa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRMAR EXCLUSÃO -->
+  <div class="fundo-modal" id="modal-excluir">
+    <div class="modal modal-pequeno">
+      <div class="cabecalho-modal">
+        <h3>Excluir tarefa</h3>
+        <button class="botao-fechar-modal" id="fechar-modal-excluir">✕</button>
+      </div>
+      <div class="corpo-modal">
+        <p class="texto-confirmacao">Essa ação é permanente e não pode ser desfeita. Deseja continuar?</p>
+      </div>
+      <div class="rodape-modal">
+        <button class="botao-cancelar" id="cancelar-exclusao">Cancelar</button>
+        <button class="botao-excluir" id="confirmar-exclusao">Sim, excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VER / EDITAR DESCRIÇÃO -->
+  <div class="fundo-modal" id="modal-detalhes">
+    <div class="modal">
+      <div class="cabecalho-modal">
+        <h3 id="titulo-detalhes">Detalhes da tarefa</h3>
+        <button class="botao-fechar-modal" id="fechar-modal-detalhes">✕</button>
+      </div>
+      <div class="corpo-modal">
+        <div class="campo">
+          <label for="descricao-detalhes">Descrição</label>
+          <textarea id="descricao-detalhes" rows="5" placeholder="Adicione uma descrição..."></textarea>
+        </div>
+      </div>
+      <div class="rodape-modal">
+        <button class="botao-cancelar" id="cancelar-detalhes">Cancelar</button>
+        <button class="botao-salvar" id="salvar-detalhes">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === ESTADO DA APLICAÇÃO ===
+    let listaDeTarefas = [];
+    let filtroAtual = 'todas';
+    let idParaExcluir = null;
+    let idParaDetalhar = null;
+
+    // === FUNÇÕES AUXILIARES ===
+
+    // Gera um ID único simples
+    function gerarId() {
+      return Math.random().toString(36).slice(2, 10);
+    }
+
+    // Retorna as tarefas filtradas conforme o menu selecionado
+    function obterTarefasFiltradas() {
+      if (filtroAtual === 'todas') return listaDeTarefas;
+      return listaDeTarefas.filter(tarefa => tarefa.status === filtroAtual);
+    }
+
+    // Escapa caracteres especiais para evitar XSS
+    function escaparHtml(texto) {
+      return texto
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    // === RENDERIZAÇÃO ===
+
+    function renderizar() {
+      const listagem = document.getElementById('lista-tarefas');
+      const estadoVazio = document.getElementById('estado-vazio');
+      const tarefasFiltradas = obterTarefasFiltradas();
+
+      // Remove os cards existentes (mantém o estado-vazio no DOM)
+      listagem.querySelectorAll('.cartao-tarefa').forEach(el => el.remove());
+
+      if (tarefasFiltradas.length === 0) {
+        estadoVazio.style.display = 'flex';
+      } else {
+        estadoVazio.style.display = 'none';
+        tarefasFiltradas.forEach(tarefa => {
+          listagem.appendChild(criarCardTarefa(tarefa));
+        });
+      }
+
+      atualizarContadores();
+    }
+
+    function criarCardTarefa(tarefa) {
+      const card = document.createElement('div');
+      card.className = 'cartao-tarefa' + (tarefa.status === 'concluida' ? ' concluida' : '');
+      card.dataset.id = tarefa.id;
+      card.dataset.status = tarefa.status;
+
+      // Mapa de etiquetas por status
+      const etiquetas = {
+        pendente:  ['etiqueta-pendente',  'Pendente'],
+        andamento: ['etiqueta-andamento', 'Em andamento'],
+        concluida: ['etiqueta-concluida', 'Concluída']
+      };
+      const [classeEtiqueta, textoEtiqueta] = etiquetas[tarefa.status];
+
+      // Mostra preview da descrição se existir
+      const previewDescricao = tarefa.descricao
+        ? `<p class="preview-descricao">${escaparHtml(tarefa.descricao)}</p>`
+        : '';
+
+      card.innerHTML = `
+        <button class="botao-status" title="Alterar status" data-id="${tarefa.id}"></button>
+        <div class="conteudo-tarefa">
+          <p class="titulo-tarefa">${escaparHtml(tarefa.titulo)}</p>
+          ${previewDescricao}
+        </div>
+        <div class="acoes-tarefa">
+          <span class="etiqueta-status ${classeEtiqueta}">${textoEtiqueta}</span>
+          <button class="botao-icone" title="Ver / editar descrição" data-detalhar="${tarefa.id}">✎</button>
+          <button class="botao-icone excluir" title="Excluir tarefa" data-excluir="${tarefa.id}">✕</button>
+        </div>
+      `;
+
+      return card;
+    }
+
+    function atualizarContadores() {
+      const total      = listaDeTarefas.length;
+      const pendentes  = listaDeTarefas.filter(t => t.status === 'pendente').length;
+      const andamento  = listaDeTarefas.filter(t => t.status === 'andamento').length;
+      const concluidas = listaDeTarefas.filter(t => t.status === 'concluida').length;
+
+      document.getElementById('contador-todas').textContent      = total;
+      document.getElementById('contador-pendentes').textContent  = pendentes;
+      document.getElementById('contador-andamento').textContent  = andamento;
+      document.getElementById('contador-concluidas').textContent = concluidas;
+    }
+
+    // === FILTRO DO MENU LATERAL ===
+
+    function mudarFiltro(novoFiltro) {
+      filtroAtual = novoFiltro;
+
+      // Atualiza o item ativo no menu
+      document.querySelectorAll('.item-menu').forEach(btn => {
+        btn.classList.toggle('ativo', btn.dataset.filtro === novoFiltro);
+      });
+
+      // Atualiza título e subtítulo da página
+      const titulos = {
+        todas:     ['Todas as tarefas', 'Gerencie seu dia com clareza'],
+        pendente:  ['Pendentes',        'Tarefas ainda não iniciadas'],
+        andamento: ['Em andamento',     'Tarefas que estão em progresso'],
+        concluida: ['Concluídas',       'Tarefas finalizadas']
+      };
+      const [titulo, subtitulo] = titulos[novoFiltro];
+      document.getElementById('titulo-pagina').textContent    = titulo;
+      document.getElementById('subtitulo-pagina').textContent = subtitulo;
+
+      renderizar();
+    }
+
+    // === OPERAÇÕES COM TAREFAS ===
+
+    // Cicla o status: pendente → andamento → concluida → pendente
+    function ciclarStatus(id) {
+      const tarefa = listaDeTarefas.find(t => t.id === id);
+      if (!tarefa) return;
+
+      const proximoStatus = {
+        pendente:  'andamento',
+        andamento: 'concluida',
+        concluida: 'pendente'
+      };
+      tarefa.status = proximoStatus[tarefa.status];
+      renderizar();
+    }
+
+    function excluirTarefa(id) {
+      listaDeTarefas = listaDeTarefas.filter(t => t.id !== id);
+      renderizar();
+    }
+
+    function criarTarefa(titulo, descricao) {
+      const novaTarefa = {
+        id: gerarId(),
+        titulo: titulo.trim(),
+        descricao: descricao.trim(),
+        status: 'pendente' 
+      };
+      listaDeTarefas.unshift(novaTarefa);
+      renderizar();
+    }
+
+    function salvarDescricao(id, descricao) {
+      const tarefa = listaDeTarefas.find(t => t.id === id);
+      if (tarefa) tarefa.descricao = descricao.trim();
+      renderizar();
+    }
+
+    // === CONTROLE DOS MODAIS ===
+
+    function abrirModal(idFundo) {
+      document.getElementById(idFundo).classList.add('aberto');
+    }
+
+    function fecharModal(idFundo) {
+      document.getElementById(idFundo).classList.remove('aberto');
+    }
+
+    // === INICIALIZAÇÃO DOS EVENTOS ===
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // Cliques no menu lateral (filtros)
+      document.querySelectorAll('.item-menu').forEach(botao => {
+        botao.addEventListener('click', () => mudarFiltro(botao.dataset.filtro));
+      });
+
+      // Abre modal de nova tarefa
+      document.getElementById('botao-abrir-modal').addEventListener('click', () => {
+        document.getElementById('input-titulo').value = '';
+        document.getElementById('input-descricao').value = '';
+        document.getElementById('input-titulo').classList.remove('erro');
+        document.getElementById('erro-titulo').classList.remove('visivel');
+        abrirModal('modal-nova-tarefa');
+        setTimeout(() => document.getElementById('input-titulo').focus(), 50);
+      });
+
+      // Fecha modal de nova tarefa
+      document.getElementById('fechar-modal-nova').addEventListener('click', () => fecharModal('modal-nova-tarefa'));
+      document.getElementById('cancelar-nova').addEventListener('click', () => fecharModal('modal-nova-tarefa'));
+
+      // Salva nova tarefa
+      document.getElementById('salvar-nova').addEventListener('click', () => {
+        const campoTitulo = document.getElementById('input-titulo');
+        const mensagemErro = document.getElementById('erro-titulo');
+        const titulo = campoTitulo.value.trim();
+
+        // Valida: título não pode ser vazio (RN02)
+        if (!titulo) {
+          campoTitulo.classList.add('erro');
+          mensagemErro.classList.add('visivel');
+          campoTitulo.focus();
+          return;
+        }
+
+        campoTitulo.classList.remove('erro');
+        mensagemErro.classList.remove('visivel');
+
+        const descricao = document.getElementById('input-descricao').value;
+        criarTarefa(titulo, descricao);
+        fecharModal('modal-nova-tarefa');
+      });
+
+      // Enter no campo de título também salva
+      document.getElementById('input-titulo').addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('salvar-nova').click();
+      });
+
+      // Fecha modal de exclusão
+      document.getElementById('fechar-modal-excluir').addEventListener('click', () => {
+        idParaExcluir = null;
+        fecharModal('modal-excluir');
+      });
+      document.getElementById('cancelar-exclusao').addEventListener('click', () => {
+        idParaExcluir = null;
+        fecharModal('modal-excluir');
+      });
+
+      // Confirma exclusão 
+      document.getElementById('confirmar-exclusao').addEventListener('click', () => {
+        if (idParaExcluir) excluirTarefa(idParaExcluir);
+        idParaExcluir = null;
+        fecharModal('modal-excluir');
+      });
+
+      // Fecha modal de detalhes
+      document.getElementById('fechar-modal-detalhes').addEventListener('click', () => {
+        idParaDetalhar = null;
+        fecharModal('modal-detalhes');
+      });
+      document.getElementById('cancelar-detalhes').addEventListener('click', () => {
+        idParaDetalhar = null;
+        fecharModal('modal-detalhes');
+      });
+
+      // Salva descrição editada
+      document.getElementById('salvar-detalhes').addEventListener('click', () => {
+        if (idParaDetalhar) {
+          const descricao = document.getElementById('descricao-detalhes').value;
+          salvarDescricao(idParaDetalhar, descricao);
+        }
+        idParaDetalhar = null;
+        fecharModal('modal-detalhes');
+      });
+
+      // Delegação de eventos na lista de tarefas
+      document.getElementById('lista-tarefas').addEventListener('click', e => {
+
+        // Clique no botão de status (círculo)
+        const botaoStatus = e.target.closest('.botao-status');
+        if (botaoStatus) {
+          ciclarStatus(botaoStatus.dataset.id);
+          return;
+        }
+
+        // Clique no botão excluir
+        const botaoExcluir = e.target.closest('[data-excluir]');
+        if (botaoExcluir) {
+          idParaExcluir = botaoExcluir.dataset.excluir;
+          abrirModal('modal-excluir');
+          return;
+        }
+
+        // Clique no botão de detalhes / descrição
+        const botaoDetalhar = e.target.closest('[data-detalhar]');
+        if (botaoDetalhar) {
+          const id = botaoDetalhar.dataset.detalhar;
+          const tarefa = listaDeTarefas.find(t => t.id === id);
+          if (!tarefa) return;
+          idParaDetalhar = id;
+          document.getElementById('titulo-detalhes').textContent = tarefa.titulo;
+          document.getElementById('descricao-detalhes').value = tarefa.descricao || '';
+          abrirModal('modal-detalhes');
+          setTimeout(() => document.getElementById('descricao-detalhes').focus(), 50);
+          return;
+        }
+      });
+
+      // Fecha modal clicando no fundo escuro
+      ['modal-nova-tarefa', 'modal-excluir', 'modal-detalhes'].forEach(idModal => {
+        document.getElementById(idModal).addEventListener('click', e => {
+          if (e.target.id === idModal) {
+            if (idModal === 'modal-excluir')  idParaExcluir  = null;
+            if (idModal === 'modal-detalhes') idParaDetalhar = null;
+            fecharModal(idModal);
+          }
+        });
+      });
+
+      // Renderiza o estado inicial (lista vazia)
+      renderizar();
+    });
+  </script>
+
+</body>
+</html>
