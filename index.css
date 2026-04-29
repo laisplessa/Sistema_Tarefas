@@ -1,8 +1,3 @@
-/* ==============================
-   LISTIFY — style.css
-   ============================== */
-
-/* === RESET BÁSICO === */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
